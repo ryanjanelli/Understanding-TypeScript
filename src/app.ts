@@ -221,3 +221,4 @@ courseForm.addEventListener("submit", (event) => {
 // nextjs embraces decorators
 
 // an update
+// another one
