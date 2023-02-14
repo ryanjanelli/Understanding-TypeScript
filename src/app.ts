@@ -219,3 +219,5 @@ courseForm.addEventListener("submit", (event) => {
 
 // can use github project ts class-validator to have built in validate functionality rather than writing it manually
 // nextjs embraces decorators
+
+// an update
