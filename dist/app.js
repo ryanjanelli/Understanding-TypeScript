@@ -5,98 +5,39 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
-function Logger(logString) {
-    console.log("LOGGER FACTORY");
-    return function (constructor) {
-        console.log(logString);
-        console.log(constructor);
-    };
-}
-function WithTemplate(template, hookId) {
-    console.log("TEMPLATE FACTORY");
-    return function (originalConstructor) {
-        return class extends originalConstructor {
-            constructor(..._) {
-                super();
-                console.log("Rendering template");
-                const hookEl = document.getElementById(hookId);
-                if (hookEl) {
-                    hookEl.innerHTML = template;
-                    hookEl.querySelector("h1").textContent = this.name;
-                }
-            }
-        };
-    };
-}
-let Person = class Person {
-    constructor() {
-        this.name = "Max";
-        console.log("Creating person object...");
+function validate(validatableInput) {
+    let isValid = true;
+    if (validatableInput.required) {
+        isValid = isValid && validatableInput.value.toString().trim().length !== 0;
     }
-};
-Person = __decorate([
-    Logger("LOGGING - PERSON"),
-    WithTemplate("<h1>My Person Object</h1>", "app")
-], Person);
-const pers = new Person();
-console.log(pers);
-function Log(target, propertyName) {
-    console.log("property decorator!!");
-    console.log(target, propertyName);
-}
-function Log2(target, name, descriptor) {
-    console.log("accessor decorator!");
-    console.log(target);
-    console.log(name);
-    console.log(descriptor);
-}
-function Log3(target, name, descriptor) {
-    console.log("method decorator!");
-    console.log(target);
-    console.log(name);
-    console.log(descriptor);
-}
-function Log4(target, name, position) {
-    console.log("parameter decorator!");
-    console.log(target);
-    console.log(name);
-    console.log(position);
-}
-class Product {
-    set price(val) {
-        if (val > 0) {
-            this._price = val;
-        }
-        else {
-            throw new Error("Invalid price, must be positive.");
-        }
+    if (validatableInput.minLength != null &&
+        typeof validatableInput.value === "string") {
+        isValid =
+            isValid &&
+                validatableInput.value.toString().trim().length >=
+                    validatableInput.minLength;
     }
-    constructor(t, p) {
-        this.title = t;
-        this._price = p;
+    if (validatableInput.maxLength != null &&
+        typeof validatableInput.value === "string") {
+        isValid =
+            isValid &&
+                validatableInput.value.toString().trim().length <=
+                    validatableInput.maxLength;
     }
-    getPriceWithTax(tax) {
-        return this._price * (1 + tax);
+    if (validatableInput.min != null &&
+        typeof validatableInput.value === "number") {
+        isValid = isValid && validatableInput.value >= validatableInput.min;
     }
+    if (validatableInput.max != null &&
+        typeof validatableInput.value === "number") {
+        isValid = isValid && validatableInput.value <= validatableInput.max;
+    }
+    return isValid;
 }
-__decorate([
-    Log
-], Product.prototype, "title", void 0);
-__decorate([
-    Log2
-], Product.prototype, "price", null);
-__decorate([
-    Log3,
-    __param(0, Log4)
-], Product.prototype, "getPriceWithTax", null);
-function Autobind(_, _2, descriptor) {
+function BindSelf(_, _2, descriptor) {
     const originalMethod = descriptor.value;
     const adjDescriptor = {
         configurable: true,
-        enumerable: false,
         get() {
             const boundFn = originalMethod.bind(this);
             return boundFn;
@@ -104,79 +45,84 @@ function Autobind(_, _2, descriptor) {
     };
     return adjDescriptor;
 }
-class Printer {
+class ProjectInput {
     constructor() {
-        this.message = "This works!";
+        this.templateElement = document.getElementById("project-input");
+        this.hostElement = document.getElementById("app");
+        const importedNode = document.importNode(this.templateElement.content, true);
+        this.element = importedNode.firstElementChild;
+        this.element.id = "user-input";
+        this.titleInputElement = this.element.querySelector("#title");
+        this.descriptionInputElement = this.element.querySelector("#description");
+        this.peopleInputElement = this.element.querySelector("#people");
+        this.configure();
+        this.attach();
     }
-    showMessage() {
-        console.log(this.message);
-    }
-}
-__decorate([
-    Autobind
-], Printer.prototype, "showMessage", null);
-const p = new Printer();
-const button = document.querySelector("button");
-button.addEventListener("click", p.showMessage);
-const registeredValidators = {};
-function Required(target, propName) {
-    var _a, _b;
-    registeredValidators[target.constructor.name] = Object.assign(Object.assign({}, registeredValidators[target.constructor.name]), { [propName]: [
-            ...((_b = (_a = registeredValidators[target.constructor.name]) === null || _a === void 0 ? void 0 : _a[propName]) !== null && _b !== void 0 ? _b : []),
-            "required",
-        ] });
-}
-function PositiveNumber(target, propName) {
-    var _a, _b;
-    registeredValidators[target.constructor.name] = Object.assign(Object.assign({}, registeredValidators[target.constructor.name]), { [propName]: [
-            ...((_b = (_a = registeredValidators[target.constructor.name]) === null || _a === void 0 ? void 0 : _a[propName]) !== null && _b !== void 0 ? _b : []),
-            "positive",
-        ] });
-}
-function validate(obj) {
-    const objValidatorConfig = registeredValidators[obj.constructor.name];
-    if (!objValidatorConfig) {
-        return true;
-    }
-    let isValid = true;
-    for (const prop in objValidatorConfig) {
-        console.log(prop);
-        for (const validator of objValidatorConfig[prop]) {
-            switch (validator) {
-                case "required":
-                    isValid = isValid && !!obj[prop];
-                    break;
-                case "positive":
-                    isValid = isValid && obj[prop] > 0;
-                    break;
-            }
+    gatherUserInput() {
+        const enteredTitle = this.titleInputElement.value;
+        const enteredDescription = this.descriptionInputElement.value;
+        const enteredPeople = this.peopleInputElement.value;
+        const titleValidatable = {
+            value: enteredTitle,
+            required: true,
+        };
+        const descriptionValidatable = {
+            value: enteredDescription,
+            required: true,
+            minLength: 5,
+        };
+        const peopleValidatable = {
+            value: +enteredPeople,
+            required: true,
+            min: 1,
+            max: 5,
+        };
+        if (!validate(titleValidatable) ||
+            !validate(descriptionValidatable) ||
+            !validate(peopleValidatable)) {
+            alert("Invalid input. Please try again.");
+            return;
+        }
+        else {
+            return [enteredTitle, enteredDescription, +enteredPeople];
         }
     }
-    return isValid;
+    clearInputs() {
+        this.titleInputElement.value = "";
+        this.descriptionInputElement.value = "";
+        this.peopleInputElement.value = "";
+    }
+    submitHandler(event) {
+        event.preventDefault();
+        const userInput = this.gatherUserInput();
+        if (Array.isArray(userInput)) {
+            const [title, desc, people] = userInput;
+            console.log(title, desc, people);
+        }
+        if (userInput) {
+            this.clearInputs();
+        }
+    }
+    configure() {
+        this.element.addEventListener("submit", this.submitHandler.bind(this));
+    }
+    attach() {
+        this.hostElement.insertAdjacentElement("afterbegin", this.element);
+    }
 }
-class Course {
-    constructor(t, p) {
+__decorate([
+    BindSelf
+], ProjectInput.prototype, "submitHandler", null);
+const prjInput = new ProjectInput();
+class SingleProject {
+    constructor(t, d, p) {
         this.title = t;
-        this.price = p;
+        this.description = d;
+        this.people = p;
     }
 }
-__decorate([
-    Required
-], Course.prototype, "title", void 0);
-__decorate([
-    PositiveNumber
-], Course.prototype, "price", void 0);
-const courseForm = document.querySelector("form");
-courseForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const titleEl = document.getElementById("title");
-    const priceEl = document.getElementById("price");
-    const title = titleEl.value;
-    const price = +priceEl.value;
-    const createdCourse = new Course(title, price);
-    if (!validate(createdCourse)) {
-        alert("Invalid input, try again!");
-        return;
+class ProjectList {
+    constructor(p) {
+        this.projects = p;
     }
-    console.log(createdCourse);
-});
+}
