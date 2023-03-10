@@ -1,134 +1,134 @@
-// included in TS generic types
+// // included in TS generic types
 
-// const names: Array<string> = []; // using generic type
-// const names2: string[] = [];
-// names[0].split(" ");
-// names2[0].split(" ");
+// // const names: Array<string> = []; // using generic type
+// // const names2: string[] = [];
+// // names[0].split(" ");
+// // names2[0].split(" ");
 
-// const promise = new Promise<string>((resolve, reject) => {
-//   setTimeout(() => {
-//     resolve("This is done!");
-//   }, 2000);
-// });
+// // const promise = new Promise<string>((resolve, reject) => {
+// //   setTimeout(() => {
+// //     resolve("This is done!");
+// //   }, 2000);
+// // });
 
-// promise.then((data) => {
-//   data.split(" ");
-// });
+// // promise.then((data) => {
+// //   data.split(" ");
+// // });
 
-// building my own generic types
+// // building my own generic types
 
-// function merge<T, U>(objA: T, objB: U) {
-//   return Object.assign(objA, objB);
-// }
+// // function merge<T, U>(objA: T, objB: U) {
+// //   return Object.assign(objA, objB);
+// // }
 
-// function merge<T extends object, U extends object>(objA: T, objB: U) {
+// // function merge<T extends object, U extends object>(objA: T, objB: U) {
+// //   return Object.assign({}, objA, objB);
+// // }
+
+// let merge = <T extends object, U extends object>(objA: T, objB: U) => {
 //   return Object.assign({}, objA, objB);
-// }
+// };
 
-let merge = <T extends object, U extends object>(objA: T, objB: U) => {
-  return Object.assign({}, objA, objB);
-};
+// // console.log(
+// //   merge(
+// //     { name: "Ryan", age: 31 },
+// //     { hobbies: ["Cards", "Games", "Computers"], isHandsome: true }
+// //   )
+// // );
 
-// console.log(
-//   merge(
-//     { name: "Ryan", age: 31 },
-//     { hobbies: ["Cards", "Games", "Computers"], isHandsome: true }
-//   )
+// const mergedObj = merge(
+//   { name: "Ryan", hobbies: ["Cards", "Games", "Computers"] },
+//   //   31
+//   { age: 31 }
 // );
 
-const mergedObj = merge(
-  { name: "Ryan", hobbies: ["Cards", "Games", "Computers"] },
-  //   31
-  { age: 31 }
-);
+// console.log(mergedObj);
 
-console.log(mergedObj);
+// interface Lengthy {
+//   length: number;
+// }
 
-interface Lengthy {
-  length: number;
-}
+// let countAndDescribe = <T extends Lengthy>(element: T): [T, string] => {
+//   let descriptionText = "Got no value.";
+//   if (element.length === 1) {
+//     descriptionText = `Got 1 element.`;
+//   } else if (element.length > 1) {
+//     descriptionText = `Got ${element.length} elements.`;
+//   }
+//   return [element, descriptionText];
+// };
 
-let countAndDescribe = <T extends Lengthy>(element: T): [T, string] => {
-  let descriptionText = "Got no value.";
-  if (element.length === 1) {
-    descriptionText = `Got 1 element.`;
-  } else if (element.length > 1) {
-    descriptionText = `Got ${element.length} elements.`;
-  }
-  return [element, descriptionText];
-};
+// console.log(countAndDescribe("Hi there!"));
+// console.log(countAndDescribe(["Sports", "Cooking"]));
+// console.log(countAndDescribe([]));
 
-console.log(countAndDescribe("Hi there!"));
-console.log(countAndDescribe(["Sports", "Cooking"]));
-console.log(countAndDescribe([]));
+// let extractAndConvert = <T extends object, U extends keyof T>(
+//   obj: T,
+//   key: U
+// ) => {
+//   return `Value: ${obj[key]}`;
+// };
 
-let extractAndConvert = <T extends object, U extends keyof T>(
-  obj: T,
-  key: U
-) => {
-  return `Value: ${obj[key]}`;
-};
+// extractAndConvert({ name: "Max" }, "name");
 
-extractAndConvert({ name: "Max" }, "name");
+// class DataStorage<T extends string | number | boolean> {
+//   private data: T[] = [];
 
-class DataStorage<T extends string | number | boolean> {
-  private data: T[] = [];
+//   addItem(item: T) {
+//     this.data.push(item);
+//   }
 
-  addItem(item: T) {
-    this.data.push(item);
-  }
+//   removeItem(item: T) {
+//     if (this.data.indexOf(item) === -1) {
+//       return;
+//     }
+//     this.data.splice(this.data.indexOf(item), 1);
+//   }
 
-  removeItem(item: T) {
-    if (this.data.indexOf(item) === -1) {
-      return;
-    }
-    this.data.splice(this.data.indexOf(item), 1);
-  }
+//   getItems() {
+//     return [...this.data];
+//   }
+// }
 
-  getItems() {
-    return [...this.data];
-  }
-}
+// const textStorage = new DataStorage<string>();
+// textStorage.addItem("Max");
+// textStorage.addItem("Manuel");
+// textStorage.removeItem("Max");
 
-const textStorage = new DataStorage<string>();
-textStorage.addItem("Max");
-textStorage.addItem("Manuel");
-textStorage.removeItem("Max");
+// console.log(textStorage.getItems());
 
-console.log(textStorage.getItems());
+// const numberStorage = new DataStorage<number>();
+// numberStorage.addItem(1);
+// numberStorage.addItem(55);
+// numberStorage.removeItem(1);
 
-const numberStorage = new DataStorage<number>();
-numberStorage.addItem(1);
-numberStorage.addItem(55);
-numberStorage.removeItem(1);
+// console.log(numberStorage.getItems());
 
-console.log(numberStorage.getItems());
+// // const objStorage = new DataStorage<object>(); // function breaks with objects because they are refernces
+// // objStorage.addItem({ name: "Max" });
+// // objStorage.addItem({ name: "Manu" });
+// // objStorage.removeItem({ name: "Max" });
 
-// const objStorage = new DataStorage<object>(); // function breaks with objects because they are refernces
-// objStorage.addItem({ name: "Max" });
-// objStorage.addItem({ name: "Manu" });
-// objStorage.removeItem({ name: "Max" });
+// // console.log(objStorage.getItems());
 
-// console.log(objStorage.getItems());
+// interface CourseGoal {
+//   title: string;
+//   description: string;
+//   completeUntil: Date;
+// }
 
-interface CourseGoal {
-  title: string;
-  description: string;
-  completeUntil: Date;
-}
+// let createCourseGoal = (
+//   title: string,
+//   description: string,
+//   date: Date
+// ): CourseGoal => {
+//   let courseGoal: Partial<CourseGoal> = {};
+//   courseGoal.title = title;
+//   courseGoal.description = description;
+//   courseGoal.completeUntil = date;
+//   return courseGoal as CourseGoal;
+// };
 
-let createCourseGoal = (
-  title: string,
-  description: string,
-  date: Date
-): CourseGoal => {
-  let courseGoal: Partial<CourseGoal> = {};
-  courseGoal.title = title;
-  courseGoal.description = description;
-  courseGoal.completeUntil = date;
-  return courseGoal as CourseGoal;
-};
-
-let names: Readonly<string[]> = ["Max", "Anna"];
-// names.push("Manu");
-// names.pop();
+// let names: Readonly<string[]> = ["Max", "Anna"];
+// // names.push("Manu");
+// // names.pop();
