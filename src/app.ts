@@ -5,13 +5,14 @@
 // /// <reference path="decorators/autobind.ts" />
 // /// <reference path="components/base-component.ts" />
 // /// <reference path="components/project-item.ts" />
-/// <reference path="components/project-list.ts" />
-/// <reference path="components/project-input.ts" />
+// /// <reference path="components/project-list.ts" />
+// /// <reference path="components/project-input.ts" />
+
+import { ProjectInput } from "./components/project-input.js";
+import { ProjectList } from "./components/project-list.js";
 
 // search other files for syntax and useful functions with SAVETHIS
-namespace App {
-  new ProjectInput();
+new ProjectInput();
 
-  new ProjectList("active");
-  new ProjectList("finished");
-}
+new ProjectList("active");
+new ProjectList("finished");
