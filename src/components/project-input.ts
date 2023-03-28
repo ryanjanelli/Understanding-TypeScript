@@ -1,10 +1,10 @@
-import Component from "./base-component.js";
+import Component from "./base-component";
 // import all exports as an object
-import * as Validation from "../util/validation.js";
+import * as Validation from "../util/validation";
 // renaming works too, not using because I like how it's spelled
 // import { AutoBind as AuToBiNd } from "../decorators/autobind.js";
-import { AutoBind } from "../decorators/autobind.js";
-import { projectState } from "../state/project-state.js";
+import { AutoBind } from "../decorators/autobind";
+import { projectState } from "../state/project-state";
 
 // ProjectInput Class
 export class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {

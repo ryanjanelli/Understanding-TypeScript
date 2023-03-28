@@ -1,336 +1,166 @@
-"use strict";
-var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-    return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
-define("components/base-component", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Component = void 0;
-    class Component {
-        constructor(templateId, hostElementId, insertAtStart, newElementId) {
-            this.templateElement = document.getElementById(templateId);
-            this.hostElement = document.getElementById(hostElementId);
-            const importedNode = document.importNode(this.templateElement.content, true);
-            this.element = importedNode.firstElementChild;
-            if (newElementId) {
-                this.element.id = newElementId;
-            }
-            this.attach(insertAtStart);
-        }
-        attach(insertAtBeginning) {
-            this.hostElement.insertAdjacentElement(insertAtBeginning ? "afterbegin" : "beforeend", this.element);
-        }
-    }
-    exports.Component = Component;
-});
-define("util/validation", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.validate = void 0;
-    function validate(validatableInput) {
-        let isValid = true;
-        if (validatableInput.required) {
-            isValid = isValid && validatableInput.value.toString().trim().length !== 0;
-        }
-        if (validatableInput.minLength != null &&
-            typeof validatableInput.value === "string") {
-            isValid =
-                isValid &&
-                    validatableInput.value.toString().trim().length >=
-                        validatableInput.minLength;
-        }
-        if (validatableInput.maxLength != null &&
-            typeof validatableInput.value === "string") {
-            isValid =
-                isValid &&
-                    validatableInput.value.toString().trim().length <=
-                        validatableInput.maxLength;
-        }
-        if (validatableInput.min != null &&
-            typeof validatableInput.value === "number") {
-            isValid = isValid && validatableInput.value >= validatableInput.min;
-        }
-        if (validatableInput.max != null &&
-            typeof validatableInput.value === "number") {
-            isValid = isValid && validatableInput.value <= validatableInput.max;
-        }
-        return isValid;
-    }
-    exports.validate = validate;
-});
-define("decorators/autobind", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.AutoBind = void 0;
-    function AutoBind(_, _2, descriptor) {
-        const originalMethod = descriptor.value;
-        const adjDescriptor = {
-            configurable: true,
-            get() {
-                const boundFn = originalMethod.bind(this);
-                return boundFn;
-            },
-        };
-        return adjDescriptor;
-    }
-    exports.AutoBind = AutoBind;
-});
-define("models/project", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.Project = exports.ProjectStatus = void 0;
-    var ProjectStatus;
-    (function (ProjectStatus) {
-        ProjectStatus[ProjectStatus["Active"] = 0] = "Active";
-        ProjectStatus[ProjectStatus["Finished"] = 1] = "Finished";
-    })(ProjectStatus = exports.ProjectStatus || (exports.ProjectStatus = {}));
-    class Project {
-        constructor(id, title, description, people, status) {
-            this.id = id;
-            this.title = title;
-            this.description = description;
-            this.people = people;
-            this.status = status;
-        }
-    }
-    exports.Project = Project;
-});
-define("state/project-state", ["require", "exports", "models/project"], function (require, exports, project_js_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.projectState = exports.ProjectState = void 0;
-    class State {
-        constructor() {
-            this.listeners = [];
-        }
-        addListener(listenerFn) {
-            this.listeners.push(listenerFn);
-        }
-    }
-    class ProjectState extends State {
-        constructor() {
-            super();
-            this.projects = [];
-        }
-        static getInstance() {
-            if (this.instance) {
-                return this.instance;
-            }
-            this.instance = new ProjectState();
-            return this.instance;
-        }
-        addProject(title, description, numOfPeople) {
-            const newProject = new project_js_1.Project(Math.random().toString(), title, description, numOfPeople, project_js_1.ProjectStatus.Active);
-            this.projects.push(newProject);
-            for (const listenerFn of this.listeners) {
-                listenerFn(this.projects.slice());
-            }
-            this.updateListeners();
-        }
-        moveProject(projectId, newStatus) {
-            const project = this.projects.find((prj) => prj.id === projectId);
-            if (project && project.status !== newStatus) {
-                project.status = newStatus;
-                this.updateListeners();
-            }
-        }
-        updateListeners() {
-            for (const listenerFn of this.listeners) {
-                listenerFn(this.projects.slice());
-            }
-        }
-    }
-    exports.ProjectState = ProjectState;
-    exports.projectState = ProjectState.getInstance();
-});
-define("components/project-input", ["require", "exports", "components/base-component", "util/validation", "decorators/autobind", "state/project-state"], function (require, exports, base_component_js_1, validation_js_1, autobind_js_1, project_state_js_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ProjectInput = void 0;
-    class ProjectInput extends base_component_js_1.Component {
-        constructor() {
-            super("project-input", "app", true, "user-input");
-            this.titleInputElement = this.element.querySelector("#title");
-            this.descriptionInputElement = this.element.querySelector("#description");
-            this.peopleInputElement = this.element.querySelector("#people");
-            this.configure();
-        }
-        configure() {
-            this.element.addEventListener("submit", this.submitHandler.bind(this));
-        }
-        renderContent() { }
-        gatherUserInput() {
-            const enteredTitle = this.titleInputElement.value;
-            const enteredDescription = this.descriptionInputElement.value;
-            const enteredPeople = this.peopleInputElement.value;
-            const titleValidatable = {
-                value: enteredTitle,
-                required: true,
-            };
-            const descriptionValidatable = {
-                value: enteredDescription,
-                required: true,
-                minLength: 5,
-            };
-            const peopleValidatable = {
-                value: +enteredPeople,
-                required: true,
-                min: 1,
-                max: 5,
-            };
-            if (!(0, validation_js_1.validate)(titleValidatable) ||
-                !(0, validation_js_1.validate)(descriptionValidatable) ||
-                !(0, validation_js_1.validate)(peopleValidatable)) {
-                alert("Invalid input. Please try again.");
-                return;
-            }
-            else {
-                return [enteredTitle, enteredDescription, +enteredPeople];
-            }
-        }
-        clearInputs() {
-            this.titleInputElement.value = "";
-            this.descriptionInputElement.value = "";
-            this.peopleInputElement.value = "";
-        }
-        submitHandler(event) {
-            event.preventDefault();
-            const userInput = this.gatherUserInput();
-            if (Array.isArray(userInput)) {
-                const [title, desc, people] = userInput;
-                project_state_js_1.projectState.addProject(title, desc, people);
-            }
-            if (userInput) {
-                this.clearInputs();
-            }
-        }
-    }
-    __decorate([
-        autobind_js_1.AutoBind
-    ], ProjectInput.prototype, "submitHandler", null);
-    exports.ProjectInput = ProjectInput;
-});
-define("models/drag-drop", ["require", "exports"], function (require, exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-});
-define("components/project-item", ["require", "exports", "components/base-component", "decorators/autobind"], function (require, exports, base_component_js_2, autobind_js_2) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ProjectItem = void 0;
-    class ProjectItem extends base_component_js_2.Component {
-        get persons() {
-            if (this.project.people === 1) {
-                return "1 person";
-            }
-            else {
-                return `${this.project.people} persons`;
-            }
-        }
-        constructor(hostId, project) {
-            super("single-project", hostId, false, project.id);
-            this.project = project;
-            this.configure();
-            this.renderContent();
-        }
-        dragStartHandler(event) {
-            event.dataTransfer.setData("text/plain", this.project.id);
-            event.dataTransfer.effectAllowed = "move";
-        }
-        dragEndHandler(_) {
-            console.log("DragEnd");
-        }
-        configure() {
-            this.element.addEventListener("dragstart", this.dragStartHandler);
-            this.element.addEventListener("dragend", this.dragStartHandler);
-        }
-        renderContent() {
-            this.element.querySelector("h2").textContent = this.project.title;
-            this.element.querySelector("h3").textContent = this.persons + " assigned.";
-            this.element.querySelector("p").textContent = this.project.description;
-        }
-    }
-    __decorate([
-        autobind_js_2.AutoBind
-    ], ProjectItem.prototype, "dragStartHandler", null);
-    exports.ProjectItem = ProjectItem;
-});
-define("components/project-list", ["require", "exports", "components/base-component", "models/project", "decorators/autobind", "components/project-item", "state/project-state"], function (require, exports, base_component_js_3, project_js_2, autobind_js_3, project_item_js_1, project_state_js_2) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    exports.ProjectList = void 0;
-    class ProjectList extends base_component_js_3.Component {
-        constructor(type) {
-            super("project-list", "app", false, `${type}-projects`);
-            this.type = type;
-            this.assignedProjects = [];
-            this.configure();
-            this.renderContent();
-        }
-        dragOverhandler(event) {
-            if (event.dataTransfer && event.dataTransfer.types[0] === "text/plain") {
-                event.preventDefault();
-                const list = this.element.querySelector("ul");
-                list.classList.add("droppable");
-            }
-        }
-        dropHandler(event) {
-            const prjId = event.dataTransfer.getData("text/plain");
-            project_state_js_2.projectState.moveProject(prjId, this.type === "active" ? project_js_2.ProjectStatus.Active : project_js_2.ProjectStatus.Finished);
-        }
-        dragLeaveHandler(_) {
-            const list = this.element.querySelector("ul");
-            list.classList.remove("droppable");
-        }
-        configure() {
-            this.element.addEventListener("dragover", this.dragOverhandler);
-            this.element.addEventListener("dragleave", this.dragLeaveHandler);
-            this.element.addEventListener("drop", this.dropHandler);
-            project_state_js_2.projectState.addListener((projects) => {
-                const relevantProjects = projects.filter((prj) => {
-                    if (this.type === "active") {
-                        return prj.status === project_js_2.ProjectStatus.Active;
-                    }
-                    else {
-                        return prj.status === project_js_2.ProjectStatus.Finished;
-                    }
-                });
-                this.assignedProjects = relevantProjects;
-                this.renderProjects();
-            });
-        }
-        renderContent() {
-            const listId = `${this.type}-projects-list`;
-            this.element.querySelector("ul").id = listId;
-            this.element.querySelector("h2").textContent =
-                this.type.toUpperCase() + " PROJECTS";
-        }
-        renderProjects() {
-            const listEl = document.getElementById(`${this.type}-projects-list`);
-            listEl.innerHTML = "";
-            for (const prjItem of this.assignedProjects) {
-                new project_item_js_1.ProjectItem(this.element.querySelector("ul").id, prjItem);
-            }
-        }
-    }
-    __decorate([
-        autobind_js_3.AutoBind
-    ], ProjectList.prototype, "dragOverhandler", null);
-    __decorate([
-        autobind_js_3.AutoBind
-    ], ProjectList.prototype, "dropHandler", null);
-    __decorate([
-        autobind_js_3.AutoBind
-    ], ProjectList.prototype, "dragLeaveHandler", null);
-    exports.ProjectList = ProjectList;
-});
-define("app", ["require", "exports", "components/project-input", "components/project-list"], function (require, exports, project_input_1, project_list_1) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    new project_input_1.ProjectInput();
-    new project_list_1.ProjectList("active");
-    new project_list_1.ProjectList("finished");
-});
+/*
+ * ATTENTION: The "eval" devtool has been used (maybe by default in mode: "development").
+ * This devtool is neither made for production nor for readable output files.
+ * It uses "eval()" calls to create a separate source file in the browser devtools.
+ * If you are trying to read the output file, select a different devtool (https://webpack.js.org/configuration/devtool/)
+ * or disable the default devtool with "devtool: false".
+ * If you are looking for production-ready output files, see mode: "production" (https://webpack.js.org/configuration/mode/).
+ */
+/******/ (() => { // webpackBootstrap
+/******/ 	"use strict";
+/******/ 	var __webpack_modules__ = ({
+
+/***/ "./src/app.ts":
+/*!********************!*\
+  !*** ./src/app.ts ***!
+  \********************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony import */ var _components_project_input__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./components/project-input */ \"./src/components/project-input.ts\");\n/* harmony import */ var _components_project_list__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./components/project-list */ \"./src/components/project-list.ts\");\n\n\nnew _components_project_input__WEBPACK_IMPORTED_MODULE_0__.ProjectInput();\nnew _components_project_list__WEBPACK_IMPORTED_MODULE_1__.ProjectList(\"active\");\nnew _components_project_list__WEBPACK_IMPORTED_MODULE_1__.ProjectList(\"finished\");\nconsole.log(\"hi\");\n\n\n//# sourceURL=webpack://understanding-ts/./src/app.ts?");
+
+/***/ }),
+
+/***/ "./src/components/base-component.ts":
+/*!******************************************!*\
+  !*** ./src/components/base-component.ts ***!
+  \******************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"default\": () => (/* binding */ Component)\n/* harmony export */ });\nclass Component {\n    constructor(templateId, hostElementId, insertAtStart, newElementId) {\n        this.templateElement = document.getElementById(templateId);\n        this.hostElement = document.getElementById(hostElementId);\n        const importedNode = document.importNode(this.templateElement.content, true);\n        this.element = importedNode.firstElementChild;\n        if (newElementId) {\n            this.element.id = newElementId;\n        }\n        this.attach(insertAtStart);\n    }\n    attach(insertAtBeginning) {\n        this.hostElement.insertAdjacentElement(insertAtBeginning ? \"afterbegin\" : \"beforeend\", this.element);\n    }\n}\n\n\n//# sourceURL=webpack://understanding-ts/./src/components/base-component.ts?");
+
+/***/ }),
+
+/***/ "./src/components/project-input.ts":
+/*!*****************************************!*\
+  !*** ./src/components/project-input.ts ***!
+  \*****************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"ProjectInput\": () => (/* binding */ ProjectInput)\n/* harmony export */ });\n/* harmony import */ var _base_component__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./base-component */ \"./src/components/base-component.ts\");\n/* harmony import */ var _util_validation__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../util/validation */ \"./src/util/validation.ts\");\n/* harmony import */ var _decorators_autobind__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../decorators/autobind */ \"./src/decorators/autobind.ts\");\n/* harmony import */ var _state_project_state__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../state/project-state */ \"./src/state/project-state.ts\");\nvar __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {\n    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;\n    if (typeof Reflect === \"object\" && typeof Reflect.decorate === \"function\") r = Reflect.decorate(decorators, target, key, desc);\n    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;\n    return c > 3 && r && Object.defineProperty(target, key, r), r;\n};\n\n\n\n\nclass ProjectInput extends _base_component__WEBPACK_IMPORTED_MODULE_0__[\"default\"] {\n    constructor() {\n        super(\"project-input\", \"app\", true, \"user-input\");\n        this.titleInputElement = this.element.querySelector(\"#title\");\n        this.descriptionInputElement = this.element.querySelector(\"#description\");\n        this.peopleInputElement = this.element.querySelector(\"#people\");\n        this.configure();\n    }\n    configure() {\n        this.element.addEventListener(\"submit\", this.submitHandler.bind(this));\n    }\n    renderContent() { }\n    gatherUserInput() {\n        const enteredTitle = this.titleInputElement.value;\n        const enteredDescription = this.descriptionInputElement.value;\n        const enteredPeople = this.peopleInputElement.value;\n        const titleValidatable = {\n            value: enteredTitle,\n            required: true,\n        };\n        const descriptionValidatable = {\n            value: enteredDescription,\n            required: true,\n            minLength: 5,\n        };\n        const peopleValidatable = {\n            value: +enteredPeople,\n            required: true,\n            min: 1,\n            max: 5,\n        };\n        if (!_util_validation__WEBPACK_IMPORTED_MODULE_1__.validate(titleValidatable) ||\n            !_util_validation__WEBPACK_IMPORTED_MODULE_1__.validate(descriptionValidatable) ||\n            !_util_validation__WEBPACK_IMPORTED_MODULE_1__.validate(peopleValidatable)) {\n            alert(\"Invalid input. Please try again.\");\n            return;\n        }\n        else {\n            return [enteredTitle, enteredDescription, +enteredPeople];\n        }\n    }\n    clearInputs() {\n        this.titleInputElement.value = \"\";\n        this.descriptionInputElement.value = \"\";\n        this.peopleInputElement.value = \"\";\n    }\n    submitHandler(event) {\n        event.preventDefault();\n        const userInput = this.gatherUserInput();\n        if (Array.isArray(userInput)) {\n            const [title, desc, people] = userInput;\n            _state_project_state__WEBPACK_IMPORTED_MODULE_3__.projectState.addProject(title, desc, people);\n        }\n        if (userInput) {\n            this.clearInputs();\n        }\n    }\n}\n__decorate([\n    _decorators_autobind__WEBPACK_IMPORTED_MODULE_2__.AutoBind\n], ProjectInput.prototype, \"submitHandler\", null);\n\n\n//# sourceURL=webpack://understanding-ts/./src/components/project-input.ts?");
+
+/***/ }),
+
+/***/ "./src/components/project-item.ts":
+/*!****************************************!*\
+  !*** ./src/components/project-item.ts ***!
+  \****************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"ProjectItem\": () => (/* binding */ ProjectItem)\n/* harmony export */ });\n/* harmony import */ var _base_component__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./base-component */ \"./src/components/base-component.ts\");\n/* harmony import */ var _decorators_autobind__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../decorators/autobind */ \"./src/decorators/autobind.ts\");\nvar __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {\n    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;\n    if (typeof Reflect === \"object\" && typeof Reflect.decorate === \"function\") r = Reflect.decorate(decorators, target, key, desc);\n    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;\n    return c > 3 && r && Object.defineProperty(target, key, r), r;\n};\n\n\nclass ProjectItem extends _base_component__WEBPACK_IMPORTED_MODULE_0__[\"default\"] {\n    get persons() {\n        if (this.project.people === 1) {\n            return \"1 person\";\n        }\n        else {\n            return `${this.project.people} persons`;\n        }\n    }\n    constructor(hostId, project) {\n        super(\"single-project\", hostId, false, project.id);\n        this.project = project;\n        this.configure();\n        this.renderContent();\n    }\n    dragStartHandler(event) {\n        event.dataTransfer.setData(\"text/plain\", this.project.id);\n        event.dataTransfer.effectAllowed = \"move\";\n    }\n    dragEndHandler(_) {\n        console.log(\"DragEnd\");\n    }\n    configure() {\n        this.element.addEventListener(\"dragstart\", this.dragStartHandler);\n        this.element.addEventListener(\"dragend\", this.dragStartHandler);\n    }\n    renderContent() {\n        this.element.querySelector(\"h2\").textContent = this.project.title;\n        this.element.querySelector(\"h3\").textContent = this.persons + \" assigned.\";\n        this.element.querySelector(\"p\").textContent = this.project.description;\n    }\n}\n__decorate([\n    _decorators_autobind__WEBPACK_IMPORTED_MODULE_1__.AutoBind\n], ProjectItem.prototype, \"dragStartHandler\", null);\n\n\n//# sourceURL=webpack://understanding-ts/./src/components/project-item.ts?");
+
+/***/ }),
+
+/***/ "./src/components/project-list.ts":
+/*!****************************************!*\
+  !*** ./src/components/project-list.ts ***!
+  \****************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"ProjectList\": () => (/* binding */ ProjectList)\n/* harmony export */ });\n/* harmony import */ var _base_component__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./base-component */ \"./src/components/base-component.ts\");\n/* harmony import */ var _models_project__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../models/project */ \"./src/models/project.ts\");\n/* harmony import */ var _decorators_autobind__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../decorators/autobind */ \"./src/decorators/autobind.ts\");\n/* harmony import */ var _project_item__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./project-item */ \"./src/components/project-item.ts\");\n/* harmony import */ var _state_project_state__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ../state/project-state */ \"./src/state/project-state.ts\");\nvar __decorate = (undefined && undefined.__decorate) || function (decorators, target, key, desc) {\n    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;\n    if (typeof Reflect === \"object\" && typeof Reflect.decorate === \"function\") r = Reflect.decorate(decorators, target, key, desc);\n    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;\n    return c > 3 && r && Object.defineProperty(target, key, r), r;\n};\n\n\n\n\n\nclass ProjectList extends _base_component__WEBPACK_IMPORTED_MODULE_0__[\"default\"] {\n    constructor(type) {\n        super(\"project-list\", \"app\", false, `${type}-projects`);\n        this.type = type;\n        this.assignedProjects = [];\n        this.configure();\n        this.renderContent();\n    }\n    dragOverhandler(event) {\n        if (event.dataTransfer && event.dataTransfer.types[0] === \"text/plain\") {\n            event.preventDefault();\n            const list = this.element.querySelector(\"ul\");\n            list.classList.add(\"droppable\");\n        }\n    }\n    dropHandler(event) {\n        const prjId = event.dataTransfer.getData(\"text/plain\");\n        _state_project_state__WEBPACK_IMPORTED_MODULE_4__.projectState.moveProject(prjId, this.type === \"active\" ? _models_project__WEBPACK_IMPORTED_MODULE_1__.ProjectStatus.Active : _models_project__WEBPACK_IMPORTED_MODULE_1__.ProjectStatus.Finished);\n    }\n    dragLeaveHandler(_) {\n        const list = this.element.querySelector(\"ul\");\n        list.classList.remove(\"droppable\");\n    }\n    configure() {\n        this.element.addEventListener(\"dragover\", this.dragOverhandler);\n        this.element.addEventListener(\"dragleave\", this.dragLeaveHandler);\n        this.element.addEventListener(\"drop\", this.dropHandler);\n        _state_project_state__WEBPACK_IMPORTED_MODULE_4__.projectState.addListener((projects) => {\n            const relevantProjects = projects.filter((prj) => {\n                if (this.type === \"active\") {\n                    return prj.status === _models_project__WEBPACK_IMPORTED_MODULE_1__.ProjectStatus.Active;\n                }\n                else {\n                    return prj.status === _models_project__WEBPACK_IMPORTED_MODULE_1__.ProjectStatus.Finished;\n                }\n            });\n            this.assignedProjects = relevantProjects;\n            this.renderProjects();\n        });\n    }\n    renderContent() {\n        const listId = `${this.type}-projects-list`;\n        this.element.querySelector(\"ul\").id = listId;\n        this.element.querySelector(\"h2\").textContent =\n            this.type.toUpperCase() + \" PROJECTS\";\n    }\n    renderProjects() {\n        const listEl = document.getElementById(`${this.type}-projects-list`);\n        listEl.innerHTML = \"\";\n        for (const prjItem of this.assignedProjects) {\n            new _project_item__WEBPACK_IMPORTED_MODULE_3__.ProjectItem(this.element.querySelector(\"ul\").id, prjItem);\n        }\n    }\n}\n__decorate([\n    _decorators_autobind__WEBPACK_IMPORTED_MODULE_2__.AutoBind\n], ProjectList.prototype, \"dragOverhandler\", null);\n__decorate([\n    _decorators_autobind__WEBPACK_IMPORTED_MODULE_2__.AutoBind\n], ProjectList.prototype, \"dropHandler\", null);\n__decorate([\n    _decorators_autobind__WEBPACK_IMPORTED_MODULE_2__.AutoBind\n], ProjectList.prototype, \"dragLeaveHandler\", null);\n\n\n//# sourceURL=webpack://understanding-ts/./src/components/project-list.ts?");
+
+/***/ }),
+
+/***/ "./src/decorators/autobind.ts":
+/*!************************************!*\
+  !*** ./src/decorators/autobind.ts ***!
+  \************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"AutoBind\": () => (/* binding */ AutoBind)\n/* harmony export */ });\nfunction AutoBind(_, _2, descriptor) {\n    const originalMethod = descriptor.value;\n    const adjDescriptor = {\n        configurable: true,\n        get() {\n            const boundFn = originalMethod.bind(this);\n            return boundFn;\n        },\n    };\n    return adjDescriptor;\n}\n\n\n//# sourceURL=webpack://understanding-ts/./src/decorators/autobind.ts?");
+
+/***/ }),
+
+/***/ "./src/models/project.ts":
+/*!*******************************!*\
+  !*** ./src/models/project.ts ***!
+  \*******************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"Project\": () => (/* binding */ Project),\n/* harmony export */   \"ProjectStatus\": () => (/* binding */ ProjectStatus)\n/* harmony export */ });\nvar ProjectStatus;\n(function (ProjectStatus) {\n    ProjectStatus[ProjectStatus[\"Active\"] = 0] = \"Active\";\n    ProjectStatus[ProjectStatus[\"Finished\"] = 1] = \"Finished\";\n})(ProjectStatus || (ProjectStatus = {}));\nclass Project {\n    constructor(id, title, description, people, status) {\n        this.id = id;\n        this.title = title;\n        this.description = description;\n        this.people = people;\n        this.status = status;\n    }\n}\n\n\n//# sourceURL=webpack://understanding-ts/./src/models/project.ts?");
+
+/***/ }),
+
+/***/ "./src/state/project-state.ts":
+/*!************************************!*\
+  !*** ./src/state/project-state.ts ***!
+  \************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"ProjectState\": () => (/* binding */ ProjectState),\n/* harmony export */   \"projectState\": () => (/* binding */ projectState)\n/* harmony export */ });\n/* harmony import */ var _models_project__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../models/project */ \"./src/models/project.ts\");\n\nclass State {\n    constructor() {\n        this.listeners = [];\n    }\n    addListener(listenerFn) {\n        this.listeners.push(listenerFn);\n    }\n}\nclass ProjectState extends State {\n    constructor() {\n        super();\n        this.projects = [];\n    }\n    static getInstance() {\n        if (this.instance) {\n            return this.instance;\n        }\n        this.instance = new ProjectState();\n        return this.instance;\n    }\n    addProject(title, description, numOfPeople) {\n        const newProject = new _models_project__WEBPACK_IMPORTED_MODULE_0__.Project(Math.random().toString(), title, description, numOfPeople, _models_project__WEBPACK_IMPORTED_MODULE_0__.ProjectStatus.Active);\n        this.projects.push(newProject);\n        for (const listenerFn of this.listeners) {\n            listenerFn(this.projects.slice());\n        }\n        this.updateListeners();\n    }\n    moveProject(projectId, newStatus) {\n        const project = this.projects.find((prj) => prj.id === projectId);\n        if (project && project.status !== newStatus) {\n            project.status = newStatus;\n            this.updateListeners();\n        }\n    }\n    updateListeners() {\n        for (const listenerFn of this.listeners) {\n            listenerFn(this.projects.slice());\n        }\n    }\n}\nconst projectState = ProjectState.getInstance();\n\n\n//# sourceURL=webpack://understanding-ts/./src/state/project-state.ts?");
+
+/***/ }),
+
+/***/ "./src/util/validation.ts":
+/*!********************************!*\
+  !*** ./src/util/validation.ts ***!
+  \********************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export */ __webpack_require__.d(__webpack_exports__, {\n/* harmony export */   \"validate\": () => (/* binding */ validate)\n/* harmony export */ });\nfunction validate(validatableInput) {\n    let isValid = true;\n    if (validatableInput.required) {\n        isValid = isValid && validatableInput.value.toString().trim().length !== 0;\n    }\n    if (validatableInput.minLength != null &&\n        typeof validatableInput.value === \"string\") {\n        isValid =\n            isValid &&\n                validatableInput.value.toString().trim().length >=\n                    validatableInput.minLength;\n    }\n    if (validatableInput.maxLength != null &&\n        typeof validatableInput.value === \"string\") {\n        isValid =\n            isValid &&\n                validatableInput.value.toString().trim().length <=\n                    validatableInput.maxLength;\n    }\n    if (validatableInput.min != null &&\n        typeof validatableInput.value === \"number\") {\n        isValid = isValid && validatableInput.value >= validatableInput.min;\n    }\n    if (validatableInput.max != null &&\n        typeof validatableInput.value === \"number\") {\n        isValid = isValid && validatableInput.value <= validatableInput.max;\n    }\n    return isValid;\n}\n\n\n//# sourceURL=webpack://understanding-ts/./src/util/validation.ts?");
+
+/***/ })
+
+/******/ 	});
+/************************************************************************/
+/******/ 	// The module cache
+/******/ 	var __webpack_module_cache__ = {};
+/******/ 	
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+/******/ 		// Check if module is in cache
+/******/ 		var cachedModule = __webpack_module_cache__[moduleId];
+/******/ 		if (cachedModule !== undefined) {
+/******/ 			return cachedModule.exports;
+/******/ 		}
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = __webpack_module_cache__[moduleId] = {
+/******/ 			// no module.id needed
+/******/ 			// no module.loaded needed
+/******/ 			exports: {}
+/******/ 		};
+/******/ 	
+/******/ 		// Execute the module function
+/******/ 		__webpack_modules__[moduleId](module, module.exports, __webpack_require__);
+/******/ 	
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+/******/ 	
+/************************************************************************/
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__webpack_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__webpack_require__.o(definition, key) && !__webpack_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__webpack_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__webpack_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/************************************************************************/
+/******/ 	
+/******/ 	// startup
+/******/ 	// Load entry module and return exports
+/******/ 	// This entry module can't be inlined because the eval devtool is used.
+/******/ 	var __webpack_exports__ = __webpack_require__("./src/app.ts");
+/******/ 	
+/******/ })()
+;
