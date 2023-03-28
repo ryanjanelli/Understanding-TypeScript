@@ -1,20 +1,26 @@
-// /// <reference path="models/drag-drop.ts" />
-// /// <reference path="models/project.ts" />
-// /// <reference path="state/project-state.ts" />
-// /// <reference path="util/validation.ts" />
-// /// <reference path="decorators/autobind.ts" />
-// /// <reference path="components/base-component.ts" />
-// /// <reference path="components/project-item.ts" />
-// /// <reference path="components/project-list.ts" />
-// /// <reference path="components/project-input.ts" />
+// import _ from "lodash";
+// enabled thanks to @types/lodash
 
-import { ProjectInput } from "./components/project-input";
-import { ProjectList } from "./components/project-list";
+import "reflect-metadata";
+import { plainToClass } from "class-transformer";
 
-// search other files for syntax and useful functions with SAVETHIS
-new ProjectInput();
+import { Product } from "./product.model";
 
-new ProjectList("active");
-new ProjectList("finished");
+const products = [
+  { title: "A Carpet", price: 29.99 },
+  { title: "A Book", price: 10.99 },
+];
+// const p1 = new Product("A book", 12.99);
 
-console.log("hi");
+// manual method without class-transformer
+// const loadedProducts = products.map((prod) => {
+//   return new Product(prod.title, prod.price);
+// });
+
+const loadedProducts = plainToClass(Product, products);
+
+for (const prod of loadedProducts) {
+  console.log(prod.getInformation());
+}
+
+// console.log(p1.getInformation());
