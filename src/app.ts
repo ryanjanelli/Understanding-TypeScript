@@ -1,36 +1,55 @@
-// import _ from "lodash";
-// enabled thanks to @types/lodash
+import axios from "axios";
+// declare var google: any;
 
-import "reflect-metadata";
-import { plainToClass } from "class-transformer";
-import { validate } from "class-validator";
+const form = document.querySelector("form");
+const addressInput = document.getElementById("address") as HTMLInputElement;
 
-import { Product } from "./product.model";
+const GOOGLE_API_KEY = "AIzaSyCnLVO44mGDGk7OkDUBO0J3X3PlNLAu-4M";
 
-const products = [
-  { title: "A Carpet", price: 29.99 },
-  { title: "A Book", price: 10.99 },
-];
+type GoogleGeocodingResponse = {
+  results: { geometry: { location: { lat: number; ln: number } } }[];
+  status: "OK" | "ZERO_RESULTS";
+};
+function searchAddressHandler(event: Event) {
+  event.preventDefault();
+  const enteredAddress = addressInput.value;
 
-const newProd = new Product("", -5.99);
-validate(newProd).then((errors) => {
-  if (errors.length > 0) {
-    console.log("VALIDATION ERROR!");
-    console.log(errors);
-  }
-});
-console.log(newProd.getInformation());
-// const p1 = new Product("A book", 12.99);
+  axios
+    .get<GoogleGeocodingResponse>(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURI(
+        enteredAddress
+      )}&key=${GOOGLE_API_KEY}`
+    )
+    .then((response) => {
+      console.log(response);
+      if (response.data.status !== "OK") {
+        throw new Error("Could not fetch location!");
+      }
+      const coordinates = {
+        lat: response.data.results[0].geometry.location.lat,
+        lng: response.data.results[0].geometry.location.ln,
+      };
 
-// manual method without class-transformer
-// const loadedProducts = products.map((prod) => {
-//   return new Product(prod.title, prod.price);
-// });
+      let map: any;
+      async function initMap(): Promise<void> {
+        //@ts-ignore
+        const { Map } = await google.maps.importLibrary("maps");
 
-const loadedProducts = plainToClass(Product, products);
-
-for (const prod of loadedProducts) {
-  console.log(prod.getInformation());
+        map = new Map(document.getElementById("map") as HTMLElement, {
+          center: coordinates,
+          zoom: 16,
+        });
+        new google.maps.Marker({
+          position: coordinates,
+          map,
+        });
+      }
+      initMap();
+    })
+    .catch((err) => {
+      alert(err.message);
+      console.log(err);
+    });
 }
 
-// console.log(p1.getInformation());
+form?.addEventListener("submit", searchAddressHandler);
